@@ -6,6 +6,7 @@ import pandas as pd
 import pickle
 import numpy as np
 import os
+st.write(os.getcwd())
 from datetime import datetime
 import plotly.graph_objects as go
 import plotly.express as px
@@ -140,61 +141,68 @@ st.markdown(
 # ============================================================
 # 7. DASHBOARD THỐNG KÊ
 # ============================================================
-if tab_dashboard and not analytics_df.empty:
+if tab_dashboard:
     st.divider()
     st.subheader("📊 Tổng Quan Dữ Liệu Nền Tảng")
 
-    total_records     = len(analytics_df)
-    baseline_risk     = analytics_df['SeriousDlqin2yrs'].mean() * 100
-    mean_age          = analytics_df['age'].mean()
-    median_debt_ratio = analytics_df.loc[analytics_df['DebtRatio'] < 5, 'DebtRatio'].median()
-
-    metrics = st.columns(4)
-    metrics[0].metric("👥 Tổng Hồ Sơ",            f"{total_records:,} hồ sơ")
-    metrics[1].metric("⚠️ Tỷ lệ Nợ Xấu Cơ Sở",   f"{baseline_risk:.2f}%")
-    metrics[2].metric("🕰️ Độ Tuổi Trung Bình",    f"{mean_age:.0f} tuổi")
-    metrics[3].metric("⚖️ Tỷ Lệ Nợ/TN (Trung Vị)", f"{median_debt_ratio*100:.1f}%")
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    plot_col1, plot_col2 = st.columns(2)
-
-    with plot_col1:
-        st.markdown("**🥧 Phân Bố Chất Lượng Tín Dụng**")
-        safe_count = (analytics_df['SeriousDlqin2yrs'] == 0).sum()
-        risk_count = (analytics_df['SeriousDlqin2yrs'] == 1).sum()
-        pie_chart = go.Figure(go.Pie(
-            labels=['Khách hàng An Toàn', 'Nhóm Nợ Xấu (>90 ngày)'],
-            values=[safe_count, risk_count],
-            hole=0.5,
-            marker_colors=['#27ae60', '#c0392b'],
-            textinfo='label+percent'
-        ))
-        pie_chart.update_layout(margin=dict(t=10, b=10, l=10, r=10), height=350, showlegend=False)
-        st.plotly_chart(pie_chart, use_container_width=True)
-
-    with plot_col2:
-        st.markdown("**📈 Tỷ Lệ Vỡ Nợ Theo Nhóm Tuổi**")
-        age_bins = pd.cut(
-            analytics_df['age'],
-            bins=[0, 30, 45, 60, 100],
-            labels=['18-30', '31-45', '46-60', '60+']
+    if analytics_df.empty:
+        st.warning(
+            "⚠️ **Không tải được dữ liệu nền tảng.** "
+            "Tệp `cs-training.csv` không tồn tại hoặc không thể đọc. "
+            "Các biểu đồ thống kê sẽ không hiển thị cho đến khi có file này."
         )
-        age_risk = analytics_df.groupby(age_bins, observed=True)['SeriousDlqin2yrs'].mean() * 100
-        bar_chart = px.bar(
-            x=age_risk.index.astype(str),
-            y=age_risk.values,
-            labels={'x': 'Nhóm Tuổi', 'y': 'Tỷ lệ Vỡ Nợ (%)'},
-            color=age_risk.values,
-            color_continuous_scale='Reds',
-            text_auto='.1f'
-        )
-        bar_chart.update_traces(texttemplate='%{text}%', textposition='outside')
-        bar_chart.update_layout(
-            margin=dict(t=10, b=10, l=10, r=10),
-            height=350,
-            coloraxis_showscale=False
-        )
-        st.plotly_chart(bar_chart, use_container_width=True)
+    else:
+        total_records     = len(analytics_df)
+        baseline_risk     = analytics_df['SeriousDlqin2yrs'].mean() * 100
+        mean_age          = analytics_df['age'].mean()
+        median_debt_ratio = analytics_df.loc[analytics_df['DebtRatio'] < 5, 'DebtRatio'].median()
+
+        metrics = st.columns(4)
+        metrics[0].metric("👥 Tổng Hồ Sơ",             f"{total_records:,} hồ sơ")
+        metrics[1].metric("⚠️ Tỷ lệ Nợ Xấu Cơ Sở",    f"{baseline_risk:.2f}%")
+        metrics[2].metric("🕰️ Độ Tuổi Trung Bình",     f"{mean_age:.0f} tuổi")
+        metrics[3].metric("⚖️ Tỷ Lệ Nợ/TN (Trung Vị)", f"{median_debt_ratio*100:.1f}%")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        plot_col1, plot_col2 = st.columns(2)
+
+        with plot_col1:
+            st.markdown("**🥧 Phân Bố Chất Lượng Tín Dụng**")
+            safe_count = (analytics_df['SeriousDlqin2yrs'] == 0).sum()
+            risk_count = (analytics_df['SeriousDlqin2yrs'] == 1).sum()
+            pie_chart = go.Figure(go.Pie(
+                labels=['Khách hàng An Toàn', 'Nhóm Nợ Xấu (>90 ngày)'],
+                values=[safe_count, risk_count],
+                hole=0.5,
+                marker_colors=['#27ae60', '#c0392b'],
+                textinfo='label+percent'
+            ))
+            pie_chart.update_layout(margin=dict(t=10, b=10, l=10, r=10), height=350, showlegend=False)
+            st.plotly_chart(pie_chart, use_container_width=True)
+
+        with plot_col2:
+            st.markdown("**📈 Tỷ Lệ Vỡ Nợ Theo Nhóm Tuổi**")
+            age_bins = pd.cut(
+                analytics_df['age'],
+                bins=[0, 30, 45, 60, 100],
+                labels=['18-30', '31-45', '46-60', '60+']
+            )
+            age_risk = analytics_df.groupby(age_bins, observed=True)['SeriousDlqin2yrs'].mean() * 100
+            bar_chart = px.bar(
+                x=age_risk.index.astype(str),
+                y=age_risk.values,
+                labels={'x': 'Nhóm Tuổi', 'y': 'Tỷ lệ Vỡ Nợ (%)'},
+                color=age_risk.values,
+                color_continuous_scale='Reds',
+                text_auto='.1f'
+            )
+            bar_chart.update_traces(texttemplate='%{text}%', textposition='outside')
+            bar_chart.update_layout(
+                margin=dict(t=10, b=10, l=10, r=10),
+                height=350,
+                coloraxis_showscale=False
+            )
+            st.plotly_chart(bar_chart, use_container_width=True)
 
 # ============================================================
 # 8. PHÂN TÍCH MÔ HÌNH AI
@@ -271,7 +279,10 @@ if 'cccd_status' not in st.session_state:
 if 'cccd_queried' not in st.session_state:
     st.session_state['cccd_queried'] = ''
 
-if cccd_search_btn and cccd_input.strip():
+if cccd_search_btn:
+    if not cccd_input.strip():
+        st.error("🚫 **Bắt buộc nhập số CCCD.** Vui lòng nhập đầy đủ số Căn Cước Công Dân trước khi tiếp tục.")
+        st.stop()
     status, row = lookup_cccd(cccd_input.strip())
     st.session_state['cccd_status']  = status
     st.session_state['cccd_queried'] = cccd_input.strip()
@@ -324,6 +335,16 @@ if cccd_search_btn and cccd_input.strip():
 # ============================================================
 st.divider()
 st.subheader("📝 Bảng Khai Báo Thông Tin Thẩm Định Tín Dụng")
+
+# ── Bắt buộc phải tra cứu CCCD trước khi hiển thị form ──
+_cccd_ready = bool(st.session_state.get('cccd_queried', '').strip())
+if not _cccd_ready:
+    st.warning(
+        "🔒 **Bạn chưa tra cứu CCCD.**\n\n"
+        "Vui lòng nhập số Căn Cước Công Dân ở ô phía trên và nhấn **🔍 Tra Cứu** "
+        "để hệ thống xác minh danh tính trước khi thẩm định tín dụng."
+    )
+    st.stop()
 
 # Lấy giá trị prefill (nếu CCCD tìm thấy) hoặc default
 pf = st.session_state.get('prefill', {})
@@ -505,29 +526,41 @@ if run_inference:
     m3.metric("⚖️ Hệ số DTI",        f"{dti_value*100:.0f}%")
     m4.metric("🚨 Tổng Lần Trễ Hạn", f"{in_delinq_30 + in_delinq_60 + in_delinq_90} lần")
 
-    # --- Ghi vào Ledger (bao gồm CCCD nếu có) ---
+    # ── Ghi vào Ledger (Đọc → Nối → Ghi đè an toàn) ──
     now_stamp  = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     ledger_row = pd.DataFrame([{
         'Thời gian':        now_stamp,
-        'CCCD':             st.session_state.get('cccd_queried', 'Nhập tay') or 'Nhập tay',
+        'CCCD':             st.session_state.get('cccd_queried', '') or 'Nhập tay',
         'Tuổi':             in_age,
         'Thu nhập (VNĐ)':   in_income,
-        'DTI':              f"{dti_value:.2f}",
-        'Tỷ lệ dùng thẻ':  f"{utilization_ratio:.2%}",
+        'DTI':              round(dti_value, 4),
+        'Tỷ lệ dùng thẻ':  round(utilization_ratio, 4),
         'Trễ hạn 30-59':   in_delinq_30,
         'Trễ hạn 60-89':   in_delinq_60,
         'Trễ hạn ≥90':     in_delinq_90,
         'Người phụ thuộc': in_dependents,
         'Vay BĐS':         in_mortgage,
-        'Xác suất vỡ nợ':  f"{pd_prob_risk*100:.1f}%",
+        'Xác suất vỡ nợ':  round(pd_prob_risk, 4),
         'Điểm CIC':        credit_score,
         'Quyết định':      status_log,
     }])
-    import csv
-    file_exists = os.path.exists(HISTORY_FILE)
-    ledger_row.to_csv(HISTORY_FILE, mode='a', index=False, header=not file_exists,
-                      encoding='utf-8-sig', quoting=csv.QUOTE_ALL)
-    st.caption(f"💾 *Hồ sơ đã được lưu vào nhật ký hệ thống (Timestamp: {now_stamp}).*")
+
+    try:
+        if os.path.exists(HISTORY_FILE) and os.path.getsize(HISTORY_FILE) > 5:
+            existing = pd.read_csv(HISTORY_FILE, encoding='utf-8-sig', on_bad_lines='skip')
+            existing.columns = existing.columns.str.strip()
+            # Chỉ nối nếu cấu trúc cột hợp lệ
+            if 'Quyết định' in existing.columns:
+                updated_data = pd.concat([existing, ledger_row], ignore_index=True)
+            else:
+                updated_data = ledger_row
+        else:
+            updated_data = ledger_row
+
+        updated_data.to_csv(HISTORY_FILE, index=False, encoding='utf-8-sig')
+        st.caption(f"💾 *Hồ sơ đã được lưu vào nhật ký hệ thống (Timestamp: {now_stamp}).*")
+    except Exception as e:
+        st.warning(f"⚠️ Không thể lưu lịch sử: {e}")
 
 # ============================================================
 # 12. SỔ LỊCH SỬ
@@ -535,13 +568,58 @@ if run_inference:
 if tab_logbook:
     st.divider()
     st.subheader("📜 Lịch Sử Thẩm Định")
-    if os.path.exists(HISTORY_FILE):
-        ledger_data = pd.read_csv(HISTORY_FILE, on_bad_lines="skip")
 
+    df_columns = [
+        "Thời gian", "CCCD", "Tuổi", "Thu nhập (VNĐ)", "DTI", "Tỷ lệ dùng thẻ",
+        "Trễ hạn 30-59", "Trễ hạn 60-89", "Trễ hạn ≥90", "Người phụ thuộc",
+        "Vay BĐS", "Xác suất vỡ nợ", "Điểm CIC", "Quyết định"
+    ]
+    ledger_data = pd.DataFrame(columns=df_columns)
+
+    if os.path.exists(HISTORY_FILE) and os.path.getsize(HISTORY_FILE) > 0:
+        try:
+            temp_data = pd.read_csv(HISTORY_FILE, on_bad_lines='skip', encoding='utf-8-sig')
+            temp_data.columns = temp_data.columns.str.strip()
+            if 'Quyết định' in temp_data.columns:
+                ledger_data = temp_data
+        except Exception as e:
+            st.error(f"Lỗi đọc file lịch sử: {e}")
+
+    if not ledger_data.empty:
         kpi1, kpi2, kpi3 = st.columns(3)
-        kpi1.metric("Tổng số truy vấn",    len(ledger_data))
-        kpi2.metric("Số hồ sơ được duyệt",  ledger_data['Quyết định'].str.contains('Duyệt').sum())
-        kpi3.metric("Đình chỉ / Từ chối",   ledger_data['Quyết định'].str.contains('Từ Chối|Đình Chỉ').sum())
+        kpi1.metric("Tổng số truy vấn", len(ledger_data))
+        duyet_count   = ledger_data['Quyết định'].astype(str).str.contains('Duyệt', na=False).sum()
+        tu_choi_count = ledger_data['Quyết định'].astype(str).str.contains('Từ Chối|Đình Chỉ', na=False).sum()
+        kpi2.metric("Số hồ sơ được duyệt", duyet_count)
+        kpi3.metric("Đình chỉ / Từ chối",  tu_choi_count)
+
+        # Tạo bản sao để hiển thị với định dạng thân thiện hơn
+        display_df = ledger_data.copy()
+        # Format số thực thành phần trăm dễ đọc cho cột DTI và Tỷ lệ dùng thẻ
+        for col in ['DTI', 'Tỷ lệ dùng thẻ']:
+            if col in display_df.columns:
+                try:
+                    display_df[col] = pd.to_numeric(display_df[col], errors='coerce').apply(
+                        lambda x: f"{x*100:.1f}%" if pd.notna(x) else ''
+                    )
+                except Exception:
+                    pass
+        # Format xác suất vỡ nợ
+        if 'Xác suất vỡ nợ' in display_df.columns:
+            try:
+                display_df['Xác suất vỡ nợ'] = pd.to_numeric(display_df['Xác suất vỡ nợ'], errors='coerce').apply(
+                    lambda x: f"{x*100:.1f}%" if pd.notna(x) else ''
+                )
+            except Exception:
+                pass
+        # Format thu nhập
+        if 'Thu nhập (VNĐ)' in display_df.columns:
+            try:
+                display_df['Thu nhập (VNĐ)'] = pd.to_numeric(display_df['Thu nhập (VNĐ)'], errors='coerce').apply(
+                    lambda x: f"{x:,.0f}" if pd.notna(x) else ''
+                )
+            except Exception:
+                pass
 
         csv_export = ledger_data.to_csv(index=False).encode('utf-8-sig')
         st.download_button(
@@ -550,6 +628,6 @@ if tab_logbook:
             file_name=f"lich_su_tham_dinh_{datetime.now().strftime('%Y%m%d')}.csv",
             mime='text/csv'
         )
-        st.dataframe(ledger_data.tail(20), use_container_width=True)
+        st.dataframe(display_df.tail(20), use_container_width=True)
     else:
-        st.info("Chưa có hồ sơ nào được thẩm định. Hãy sử dụng biểu mẫu bên trên.")
+        st.info("Chưa có hồ sơ nào được thẩm định hoặc file dữ liệu đang trống. Hãy sử dụng biểu mẫu bên trên để tạo dữ liệu mới.")
