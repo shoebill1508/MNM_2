@@ -1,1 +1,7 @@
-streamlit, pandas, scikit-learn, plotly, openpyxl
+streamlit
+pandas
+numpy
+scikit-learn
+plotly
+openpyxl
+joblib
