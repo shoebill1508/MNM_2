@@ -6,7 +6,6 @@ import pandas as pd
 import pickle
 import numpy as np
 import os
-st.write(os.getcwd())
 from datetime import datetime
 import plotly.graph_objects as go
 import plotly.express as px
